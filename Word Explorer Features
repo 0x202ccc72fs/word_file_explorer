@@ -1,0 +1,15 @@
+The Word Explorer offers the following features:
+
+Search for Words or Phrases: Scans files in a directory (including subdirectories) for a specific word or phrase.
+Multithreading: Ensures fast and efficient processing by searching multiple files simultaneously.
+Detailed Results:
+File path
+Line number
+Position within the line
+Line content
+Customizable Options:
+Case-sensitive or case-insensitive search.
+Match whole words only.
+Logging: Automatically saves all results to a log file.
+File Skipping: Skips unreadable or non-text files.
+User-Friendly Interface: Clear prompts and visual animations for a better user experience.
