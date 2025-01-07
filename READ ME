@@ -1,19 +1,11 @@
 Word Explorer
-A Python script to search for a word or phrase in a text file and display the matching lines.
+A Python tool to search for words or phrases in files across directories.
 
+Features
+Multithreaded search with case and word matching options.
+Outputs file path, line, position, and content.
+Saves results to a log file.
 Usage
-Save the script as word_explorer.py.
-Run it:
+Run with Python 3.8+:
+bash
 python word_explorer.py
-Follow the menu:
-1: Search for a word/phrase in a file (provide the filename and search term).
-2: Exit the program.
-Example
-Searching for Python in example.txt:
-
-Input: Python
-File content: I love Python programming!
-Output: Python programming!
-Notes
-Ensure the file exists and is readable.
-Use valid menu options (1 or 2).
