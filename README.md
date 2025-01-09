@@ -7,5 +7,4 @@ Outputs file path, line, position, and content.
 Saves results to a log file.
 Usage
 Run with Python 3.8+:
-bash
-python word_explorer.py
+python3 word_explorer.py
