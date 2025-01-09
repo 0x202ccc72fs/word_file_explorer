@@ -1,4 +1,4 @@
-Word Explorer
+#Word Explorer
 A Python tool to search for words or phrases in files across directories.
 
 Features
