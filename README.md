@@ -10,5 +10,8 @@ Run with Python 3.8+:
 python3 word_explorer.py
 git clone https://github.com/sherlock-project/sherlock.git
 pip3 install -r requirements.txt
+python3 -m venv sherlock-env
+source sherlock-env/bin/activate
+pip install -r requirements.txt
 
 
