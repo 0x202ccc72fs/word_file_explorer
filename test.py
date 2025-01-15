@@ -5,6 +5,8 @@ from rich.table import Table
 import asyncio
 import aiohttp
 from ipwhois import IPWhois
+import json
+import time
 
 # Initialize rich console
 console = Console()
@@ -42,9 +44,10 @@ async def check_profile(session, platform, url):
         async with session.get(url, allow_redirects=True) as response:
             if response.status == 200:
                 console.print(f"[bold green]{platform} profile found:[/bold green] {url}")
+                # Optional: Scrape public data if available
                 if platform in ["Twitter", "Instagram"]:
                     page_content = await response.text()
-                    console.print(f"[cyan]Public data (if available):[/cyan] Parsing limited by platform restrictions.")
+                    console.print(f"[cyan]Parsing data (if public):[/cyan] Limited by platform restrictions.")
             else:
                 console.print(f"[bold yellow]{platform} profile not found.[/bold yellow]")
     except Exception as e:
@@ -88,9 +91,19 @@ def geo_ip_lookup(ip_address):
         table.add_row("ASN", results.get("asn", "Unknown"))
         table.add_row("ASN Description", results.get("asn_description", "Unknown"))
         table.add_row("Network", results.get("network", {}).get("handle", "Unknown"))
+        table.add_row("Abuse Contact", results.get("objects", {}).get("contact", "Unknown"))
         console.print(table)
     except Exception as e:
         console.print(f"[bold red]Error during Geo IP lookup:[/bold red] {e}")
+
+# Enhanced: Logging and Export Functionality
+def export_results(filename, data):
+    try:
+        with open(filename, 'w') as file:
+            json.dump(data, file, indent=4)
+        console.print(f"[bold green]Results successfully exported to {filename}[/bold green]")
+    except Exception as e:
+        console.print(f"[bold red]Error exporting results:[/bold red] {e}")
 
 # Main Menu
 def main_menu():
