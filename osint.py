@@ -11,10 +11,15 @@ console = Console()
 
 # Function: Display header
 def display_header():
-    console.print("[bold magenta]" + "=" * 60 + "[/bold magenta]")
-    console.print("[bold blue]OSINT Ultimate - Elite Intelligence Tool[/bold blue]")
-    console.print("[bold yellow]                   Made by Spynac[/bold yellow]")
-    console.print("[bold magenta]" + "=" * 60 + "[/bold magenta]\n")
+    console.print("[bold magenta]" + "=" * 80 + "[/bold magenta]")
+    console.print("[bold blue] ███████╗███████╗ █████╗ ██████╗ [/bold blue]")
+    console.print("[bold blue] ██╔════╝██╔════╝██╔══██╗██╔══██╗[/bold blue]")
+    console.print("[bold blue] █████╗  █████╗  ███████║██████╔╝[/bold blue]")
+    console.print("[bold blue] ██╔══╝  ██╔══╝  ██╔══██║██╔═══╝ [/bold blue]")
+    console.print("[bold blue] ███████╗██║     ██║  ██║██║     [/bold blue]")
+    console.print("[bold blue] ╚══════╝╚═╝     ╚═╝  ╚═╝╚═╝     [/bold blue]")
+    console.print("[bold yellow]                      MADE BY SPYNAC[/bold yellow]")
+    console.print("[bold magenta]" + "=" * 80 + "[/bold magenta]\n")
 
 # Function: WHOIS Lookup
 def whois_lookup(domain):
@@ -150,12 +155,10 @@ def main_menu():
             domain = console.input("[bold yellow]Enter the domain for DNS lookup: [/bold yellow]")
             asyncio.run(dns_lookup(domain))
         elif choice == "6":
-            console.print("[bold green]Exiting OSINT Ultimate. Goodbye![/bold green]")
+            console.print("[bold green]Exiting Efap. Goodbye![/bold green]")
             break
         else:
             console.print("[bold red]Invalid choice. Please try again.[/bold red]")
 
 if __name__ == "__main__":
     main_menu()
-
-
