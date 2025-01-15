@@ -11,10 +11,10 @@ console = Console()
 
 # Function: Display header
 def display_header():
-    console.print("[bold magenta]" + "=" * 47 + "[/bold magenta]")
+    console.print("[bold magenta]" + "=" * 60 + "[/bold magenta]")
     console.print("[bold blue]OSINT Ultimate - Open Source Intelligence Tool[/bold blue]")
-    console.print("[bold yellow]               Made by Spynac[/bold yellow]")
-    console.print("[bold magenta]" + "=" * 47 + "[/bold magenta]\n")
+    console.print("[bold yellow]                   Made by Spynac[/bold yellow]")
+    console.print("[bold magenta]" + "=" * 60 + "[/bold magenta]\n")
 
 # Function: WHOIS Lookup
 def whois_lookup(domain):
@@ -49,14 +49,16 @@ async def reverse_ip_lookup(ip_address):
     except Exception as e:
         console.print(f"[bold red]Error:[/bold red] {e}")
 
-# Function: Social Media Profiler (Asynchronous)
+# Function: Social Media Profiler (Enhanced)
 async def social_media_profiler(username):
     platforms = {
         "Twitter": f"https://twitter.com/{username}",
         "Instagram": f"https://instagram.com/{username}",
         "LinkedIn": f"https://www.linkedin.com/in/{username}",
         "GitHub": f"https://github.com/{username}",
-        "TikTok": f"https://www.tiktok.com/@{username}"
+        "TikTok": f"https://www.tiktok.com/@{username}",
+        "Facebook": f"https://facebook.com/{username}",
+        "Reddit": f"https://www.reddit.com/user/{username}"
     }
     console.print(f"\n[bold cyan]Checking social media profiles for: {username}[/bold cyan]")
     async with aiohttp.ClientSession() as session:
@@ -75,7 +77,7 @@ async def check_profile(session, platform, url):
     except Exception as e:
         console.print(f"[bold red]Error checking {platform}:[/bold red] {e}")
 
-# Function: Email Breach Checker (Asynchronous)
+# Function: Email Breach Checker (Enhanced)
 async def email_breach_checker(email):
     console.print(f"\n[bold cyan]Checking breaches for: {email}[/bold cyan]")
     try:
@@ -94,10 +96,10 @@ async def email_breach_checker(email):
     except Exception as e:
         console.print(f"[bold red]Error:[/bold red] {e}")
 
-# Function: DNS Lookup (Asynchronous)
+# Function: DNS Lookup (Enhanced)
 async def dns_lookup(domain):
     console.print(f"\n[bold cyan]Performing DNS lookup for: {domain}[/bold cyan]")
-    record_types = ["A", "MX", "NS", "TXT", "CNAME"]
+    record_types = ["A", "MX", "NS", "TXT", "CNAME", "SOA"]
     try:
         tasks = []
         for record in record_types:
