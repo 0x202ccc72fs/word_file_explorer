@@ -5,7 +5,6 @@ from rich.console import Console
 from rich.table import Table
 import asyncio
 import aiohttp
-import concurrent.futures
 
 # Initialize rich console
 console = Console()
@@ -13,7 +12,7 @@ console = Console()
 # Function: Display header
 def display_header():
     console.print("[bold magenta]" + "=" * 60 + "[/bold magenta]")
-    console.print("[bold blue]OSINT Ultimate - Maximum Performance Intelligence Tool[/bold blue]")
+    console.print("[bold blue]OSINT Ultimate - Elite Intelligence Tool[/bold blue]")
     console.print("[bold yellow]                   Made by Spynac[/bold yellow]")
     console.print("[bold magenta]" + "=" * 60 + "[/bold magenta]\n")
 
@@ -31,7 +30,7 @@ def whois_lookup(domain):
     except Exception as e:
         console.print(f"[bold red]Error during WHOIS lookup:[/bold red] {e}")
 
-# Function: Reverse IP Lookup (Asynchronous, Optimized)
+# Function: Reverse IP Lookup
 async def reverse_ip_lookup(ip_address):
     console.print(f"\n[bold cyan]Performing reverse IP lookup for: {ip_address}[/bold cyan]")
     try:
@@ -50,7 +49,7 @@ async def reverse_ip_lookup(ip_address):
     except Exception as e:
         console.print(f"[bold red]Error:[/bold red] {e}")
 
-# Function: Social Media Profiler (Maximum Optimization)
+# Function: Social Media Profiler
 async def social_media_profiler(username):
     platforms = {
         "Twitter": f"https://twitter.com/{username}",
@@ -76,45 +75,37 @@ async def check_profile(session, platform, url):
     except Exception as e:
         console.print(f"[bold red]Error checking {platform}:[/bold red] {e}")
 
-# Function: Email Breach Checker (End-Level Optimization)
+# Function: Email Breach Checker
 async def email_breach_checker(email):
     console.print(f"\n[bold cyan]Checking breaches for: {email}[/bold cyan]")
-    breach_sources = [
-        f"https://haveibeenpwned.com/api/v3/breachedaccount/{email}",
-        f"https://emailrep.io/{email}",
-        f"https://hunter.io/api/v2/email-count?domain={email.split('@')[-1]}"
+    email_domain = email.split('@')[-1]
+    potential_sources = [
+        f"https://api.hackertarget.com/hostsearch/?q={email_domain}",
+        f"https://leakcheck.net/api/?key=test&check={email}",
+        f"https://hunter.io/search/?email={email}"
     ]
-    try:
-        headers = {"User-Agent": "OSINT-Tool", "Accept": "application/json"}
-        async with aiohttp.ClientSession() as session:
-            tasks = [asyncio.create_task(fetch_breach_data(session, url, headers)) for url in breach_sources]
-            await asyncio.gather(*tasks)
-    except Exception as e:
-        console.print(f"[bold red]Error:[/bold red] {e}")
+    async with aiohttp.ClientSession() as session:
+        tasks = [asyncio.create_task(fetch_email_data(session, url)) for url in potential_sources]
+        await asyncio.gather(*tasks)
 
-async def fetch_breach_data(session, url, headers):
+async def fetch_email_data(session, url):
     try:
-        async with session.get(url, headers=headers) as response:
+        async with session.get(url) as response:
             if response.status == 200:
-                data = await response.json()
+                data = await response.text()
                 console.print(f"[bold green]Data fetched from {url}:[/bold green]")
                 console.print(data)
-            elif response.status == 404:
-                console.print(f"[bold yellow]No data found at {url}.[/bold yellow]")
             else:
-                console.print(f"[bold red]Failed to fetch data from {url}.[/bold red]")
+                console.print(f"[bold yellow]No data found at {url}.[/bold yellow]")
     except Exception as e:
         console.print(f"[bold red]Error fetching data from {url}:[/bold red] {e}")
 
-# Function: DNS Lookup (End-Level Optimization)
+# Function: DNS Lookup
 async def dns_lookup(domain):
     console.print(f"\n[bold cyan]Performing DNS lookup for: {domain}[/bold cyan]")
     record_types = ["A", "MX", "NS", "TXT", "CNAME", "SOA"]
-    try:
-        tasks = [asyncio.create_task(fetch_dns_records(domain, record)) for record in record_types]
-        await asyncio.gather(*tasks)
-    except Exception as e:
-        console.print(f"[bold red]Error:[/bold red] {e}")
+    tasks = [asyncio.create_task(fetch_dns_records(domain, record)) for record in record_types]
+    await asyncio.gather(*tasks)
 
 async def fetch_dns_records(domain, record):
     try:
@@ -130,7 +121,7 @@ async def fetch_dns_records(domain, record):
     except Exception as e:
         console.print(f"[bold red]Error fetching {record} records:[/bold red] {e}")
 
-# Function: Main menu
+# Main Menu
 def main_menu():
     display_header()
     while True:
@@ -166,4 +157,5 @@ def main_menu():
 
 if __name__ == "__main__":
     main_menu()
+
 
