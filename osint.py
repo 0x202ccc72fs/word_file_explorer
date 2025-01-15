@@ -11,15 +11,15 @@ console = Console()
 
 # Function: Display header
 def display_header():
-    console.print("[bold magenta]" + "=" * 80 + "[/bold magenta]")
+    console.print("[bold magenta]" + "=" * 34 + "[/bold magenta]")
     console.print("[bold blue] ███████╗███████╗ █████╗ ██████╗ [/bold blue]")
     console.print("[bold blue] ██╔════╝██╔════╝██╔══██╗██╔══██╗[/bold blue]")
     console.print("[bold blue] █████╗  █████╗  ███████║██████╔╝[/bold blue]")
     console.print("[bold blue] ██╔══╝  ██╔══╝  ██╔══██║██╔═══╝ [/bold blue]")
     console.print("[bold blue] ███████╗██║     ██║  ██║██║     [/bold blue]")
     console.print("[bold blue] ╚══════╝╚═╝     ╚═╝  ╚═╝╚═╝     [/bold blue]")
-    console.print("[bold yellow]                      MADE BY SPYNAC[/bold yellow]")
-    console.print("[bold magenta]" + "=" * 80 + "[/bold magenta]\n")
+    console.print("[bold yellow]       MADE BY SPYNAC[/bold yellow]")
+    console.print("[bold magenta]" + "=" * 34 + "[/bold magenta]\n")
 
 # Function: WHOIS Lookup
 def whois_lookup(domain):
