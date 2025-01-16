@@ -16,3 +16,9 @@ python3 word_explorer.py
 sudo nano /etc/default/keyboard
 
 
+
+
+sudo dpkg-reconfigure keyboard-configuration
+sudo systemctl restart keyboard-setup
+
+
