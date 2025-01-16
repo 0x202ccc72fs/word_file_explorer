@@ -8,17 +8,3 @@ Saves results to a log file.
 Usage
 Run with Python 3.8+:
 python3 word_explorer.py
-
-
-
-
-
-sudo nano /etc/default/keyboard
-
-
-
-
-sudo dpkg-reconfigure keyboard-configuration
-sudo systemctl restart keyboard-setup
-
-
