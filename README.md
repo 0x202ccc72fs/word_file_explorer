@@ -10,3 +10,9 @@ Run with Python 3.8+:
 python3 word_explorer.py
 
 
+
+
+
+sudo nano /etc/default/keyboard
+
+
