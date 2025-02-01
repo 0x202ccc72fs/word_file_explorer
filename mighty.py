@@ -1,11 +1,15 @@
 #!/usr/bin/env python3
 """
-MightyScanner CLI – Ultimate Edition 2.0 (Userfriendly & Kompakt)
-------------------------------------------------------------------
-Das ultimative, terminalbasierte Netzwerkscanner-Tool – mit animiertem Splashscreen, 
-interaktivem Wizard und einem nummerierten Menü, das dir erklärt, was du von den einzelnen Scan-Methoden erwarten kannst.
+MightyScanner CLI – Ultimate Edition 2.0 (Interactive Wizard)
+---------------------------------------------------------------
+Das ultimative, terminalbasierte Netzwerkscanner-Tool.  
+Beim Start erscheint ein animierter Splashscreen.  
+Danach folgt ein interaktiver Wizard mit nummerierten Menüs:  
+1. Scan-Typ auswählen (mit kurzer Beschreibung, was diese Methode macht)  
+2. Ziel (IP/URL) eingeben  
+3. Weitere Einstellungen wie Portbereich, Host Discovery, Banner Grabbing etc.
 
-ACHTUNG: Nur in autorisierten Netzwerken verwenden!
+ACHTUNG: Dieses Tool darf ausschließlich in autorisierten Netzwerken verwendet werden!
 """
 
 import argparse
@@ -97,7 +101,7 @@ def vulnerability_scan(target, port) -> str:
     return vuln_ports.get(port, "")
 
 ##########################################
-# Parsing-Funktionen für Targets & Ports
+# Parsing-Funktionen
 ##########################################
 
 def parse_targets(target_str: str) -> list:
@@ -416,7 +420,7 @@ def output_results(data: dict, output_format: str, output_file: str):
         console.print(f"[red]Fehler beim Schreiben in '{output_file}': {e}[/red]")
 
 ##########################################
-# Interaktiver Wizard (Benutzerfreundliche Eingabe) mit nummeriertem Menü und Methodenerklärungen
+# Interaktiver Wizard – Nummeriertes Menü mit Methodenerklärungen
 ##########################################
 
 def interactive_wizard() -> argparse.Namespace:
@@ -437,20 +441,20 @@ def interactive_wizard() -> argparse.Namespace:
     
     console.print("\n[bold]3. Wähle den Scan-Typ aus:[/bold]")
     menu_options = {
-        "1": ("TCP Connect", "Stellt eine vollständige TCP-Verbindung her. Ergebnis: Offen/geschlossen, Banner (falls aktiviert)"),
-        "2": ("SYN", "Sendet ein SYN-Paket, ohne die Verbindung vollständig aufzubauen. Ergebnis: Portstatus, OS-Fingerprint und Banner (falls aktiviert)"),
+        "1": ("TCP Connect", "Stellt eine vollständige TCP-Verbindung her. Ergebnis: Portstatus, Banner (optional)"),
+        "2": ("SYN", "Sendet ein SYN-Paket ohne vollständige Verbindung. Ergebnis: Portstatus, OS-Fingerprint, Banner (optional)"),
         "3": ("UDP", "Sendet ein UDP-Paket. Ergebnis: Keine Antwort kann offen oder gefiltert bedeuten."),
-        "4": ("Null", "Sendet ein Paket ohne gesetzte TCP-Flags. Ergebnis: Stealth-Modus, basierend auf fehlender Antwort."),
-        "5": ("FIN", "Sendet ein FIN-Paket. Ergebnis: Offene Ports antworten meist nicht."),
-        "6": ("XMAS", "Sendet ein Paket mit FIN, PSH und URG. Ergebnis: Stealth-Modus zur Erkennung offener Ports."),
-        "7": ("ACK", "Sendet ein ACK-Paket, um Filterung zu erkennen. Ergebnis: Erkennt, ob der Port gefiltert ist."),
-        "8": ("Fragment", "Sendet fragmentierte Pakete, um Firewalls zu umgehen. Ergebnis: Erkennung offener Ports trotz Fragmentierung."),
+        "4": ("Null", "Sendet ein Paket ohne gesetzte TCP-Flags. Stealth-Modus."),
+        "5": ("FIN", "Sendet ein FIN-Paket. Offene Ports antworten meist nicht."),
+        "6": ("XMAS", "Sendet ein Paket mit FIN, PSH und URG. Stealth-Modus zur Erkennung offener Ports."),
+        "7": ("ACK", "Sendet ein ACK-Paket. Erkennt Filterung."),
+        "8": ("Fragment", "Sendet fragmentierte Pakete zur Umgehung von Firewalls."),
         "9": ("Aggressive", "Kombiniert TCP Connect und SYN-Scan. Ergebnis: Umfassende Informationen inkl. OS-Fingerprint und Vulnerability-Hinweisen.")
     }
     for key, (name, desc) in menu_options.items():
         console.print(f"[yellow]   {key}.[/yellow] {name} - {desc}")
     choice = Prompt.ask("[bold]Deine Wahl (1-9)[/bold]", choices=[str(i) for i in range(1, 10)], default="1")
-    scan_type = menu_options[choice][0].lower()  # z.B. "connect", "syn", etc.
+    scan_type = menu_options[choice][0].lower()
     console.print(f"[italic green]Du hast '{menu_options[choice][0]}' gewählt: {menu_options[choice][1]}[/italic green]\n")
     
     host_disc_input = Prompt.ask("[bold]4. Soll eine Host Discovery (Ping) durchgeführt werden? (y/n)[/bold]", choices=["y", "n"], default="n")
@@ -611,4 +615,3 @@ def main():
 
 if __name__ == "__main__":
     main()
-
