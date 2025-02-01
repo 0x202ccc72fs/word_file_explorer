@@ -1,13 +1,13 @@
 #!/usr/bin/env python3
 """
-MightyScanner CLI – Ultimate Edition 2.0 (Interactive Wizard)
+Mintic Scanner CLI – Ultimate Edition 2.0 (Interactive Wizard)
 ---------------------------------------------------------------
 Das ultimative, terminalbasierte Netzwerkscanner-Tool.  
-Beim Start erscheint ein animierter Splashscreen.  
-Danach folgt ein interaktiver Wizard mit nummerierten Menüs:  
-1. Scan-Typ auswählen (mit kurzer Beschreibung, was diese Methode macht)  
-2. Ziel (IP/URL) eingeben  
-3. Weitere Einstellungen wie Portbereich, Host Discovery, Banner Grabbing etc.
+Beim Start erscheint sofort ein animiertes Mintic Scanner Banner mit Ladeeffekt.  
+Danach folgst du einem interaktiven Wizard mit nummerierten Menüs:
+  1. Scan-Typ auswählen (mit kurzer Beschreibung, was die Methode bewirkt)
+  2. Ziel (IP, URL, CIDR oder Dateiname) eingeben
+  3. Weitere Einstellungen (Portbereich, Host Discovery, Banner Grabbing, etc.)
 
 ACHTUNG: Dieses Tool darf ausschließlich in autorisierten Netzwerken verwendet werden!
 """
@@ -46,9 +46,33 @@ except ImportError:
 console = Console()
 
 ##########################################
+# Banner-Animation beim Start
+##########################################
+def display_banner():
+    banner_art = r"""
+  __  __ _       _   _       ____          
+ |  \/  (_)_ __ | |_(_) ___ / ___|         
+ | |\/| | | '_ \| __| |/ __| \___ \         
+ | |  | | | | | | |_| | (__   ___) |        
+ |_|  |_|_|_| |_|\__|_|\___| |____/         
+"""
+    banner_title = "Mintic Scanner"
+    colors = ["red", "orange1", "yellow", "green", "blue", "magenta"]
+    # Erzeuge ein Panel mit dem Banner und Titel
+    panel = Panel(banner_art + "\n" + f"[bold white]{banner_title}[/bold white]", title="", subtitle="Loading...", style="bold white")
+    with Live(panel, refresh_per_second=10, screen=True) as live:
+        for i in range(30):
+            color = colors[i % len(colors)]
+            panel.title = f"[bold {color}]{banner_title}[/bold {color}]"
+            panel.subtitle = f"[green]Lade {int(i/30*100)}%[/green]"
+            live.update(panel)
+            time.sleep(0.1)
+    console.print(Align.center(panel))
+    time.sleep(1)
+
+##########################################
 # Zusatzfunktionen: Host Discovery & Reverse DNS
 ##########################################
-
 def host_is_up(target: str) -> bool:
     """Führt einen Ping-Test durch, um zu prüfen, ob ein Host erreichbar ist."""
     try:
@@ -69,7 +93,6 @@ def reverse_dns(target: str) -> str:
 ##########################################
 # Zusatzfunktionen: Advanced OS Fingerprint & Vulnerability Scan
 ##########################################
-
 def advanced_os_fingerprint(ttl, window) -> str:
     """
     Heuristisches OS‑Fingerprinting basierend auf TTL und TCP‑Fenstergröße.
@@ -101,9 +124,8 @@ def vulnerability_scan(target, port) -> str:
     return vuln_ports.get(port, "")
 
 ##########################################
-# Parsing-Funktionen
+# Parsing-Funktionen für Targets & Ports
 ##########################################
-
 def parse_targets(target_str: str) -> list:
     """
     Parst Zieldefinitionen (Einzelhost, kommagetrennte Liste, CIDR).
@@ -146,7 +168,6 @@ def parse_ports(port_str: str) -> list:
 ##########################################
 # Scan-Funktionen – Verschiedene Methoden
 ##########################################
-
 async def tcp_connect_scan_async(target: str, port: int, timeout: float, grab_banner: bool) -> dict:
     result = {"port": port, "status": "closed", "banner": ""}
     try:
@@ -332,7 +353,6 @@ async def scan_all_targets(targets: list, ports: list, scan_type: str, timeout: 
 ##########################################
 # Aggregation der Zielinformationen (Kompakte Zusammenfassung)
 ##########################################
-
 def aggregate_target_info(target: str, results: list) -> dict:
     total_scanned = len(results)
     open_ports = [str(r["port"]) for r in results if r["status"] == "open"]
@@ -352,7 +372,6 @@ def aggregate_target_info(target: str, results: list) -> dict:
 ##########################################
 # Ausgabe der Ergebnisse & Zusammenfassung
 ##########################################
-
 def print_results(overall_results: dict):
     for target, results in overall_results.items():
         table = Table(title=f"Ergebnisse für {target}", show_lines=True)
@@ -422,7 +441,6 @@ def output_results(data: dict, output_format: str, output_file: str):
 ##########################################
 # Interaktiver Wizard – Nummeriertes Menü mit Methodenerklärungen
 ##########################################
-
 def interactive_wizard() -> argparse.Namespace:
     console.print("[bold blue]Willkommen beim interaktiven MightyScanner Wizard![/bold blue]")
     console.print("Bitte folge den Anweisungen. Du kannst jederzeit die vorgeschlagenen Standardwerte übernehmen.\n")
@@ -488,7 +506,6 @@ def interactive_wizard() -> argparse.Namespace:
 ##########################################
 # Splashscreen (Banner) und Animation
 ##########################################
-
 def display_splash():
     splash_art = r"""
   __  __ _       _   _       ____                                  
@@ -497,27 +514,26 @@ def display_splash():
  | |  | | | | | | |_| | (__   ___) | (_| (_| | | | | | | |  __/ |    
  |_|  |_|_|_| |_|\__|_|\___| |____/ \___\__,_|_| |_|_| |_|\___|_|    
 """
-    panel = Panel(splash_art, title="[bold magenta]MightyScanner CLI – Ultimate Edition 2.0[/bold magenta]",
+    panel = Panel(splash_art, title="[bold magenta]Mintic Scanner CLI – Ultimate Edition 2.0[/bold magenta]",
                   subtitle="[green]Das mächtigste Netzwerkscanner-Tool der Welt[/green]",
                   style="bold blue")
-    with Live(panel, refresh_per_second=4, screen=True) as live:
+    with Live(panel, refresh_per_second=10, screen=True) as live:
         for i in range(0, 101, 10):
-            panel.title = f"[bold magenta]MightyScanner CLI – Ultimate Edition 2.0[/bold magenta] [yellow]Lade {i}%[/yellow]"
+            panel.title = f"[bold magenta]Mintic Scanner CLI – Ultimate Edition 2.0[/bold magenta] [yellow]Lade {i}%[/yellow]"
             live.update(panel)
-            time.sleep(0.3)
+            time.sleep(0.1)
     console.print(Align.center(panel))
     time.sleep(1)
 
 ##########################################
 # Hauptprogramm
 ##########################################
-
 async def main_async():
     if len(sys.argv) == 1 or "--interactive" in sys.argv:
         args = interactive_wizard()
     else:
         parser = argparse.ArgumentParser(
-            description="MightyScanner CLI – Ultimate Edition 2.0: Ein High-End Netzwerkscanner für das Terminal",
+            description="Mintic Scanner CLI – Ultimate Edition 2.0: Ein High-End Netzwerkscanner für das Terminal",
             epilog="Nur in autorisierten Netzwerken verwenden!"
         )
         parser.add_argument("target", help="Target(s): Einzelhost, kommagetrennte Liste, CIDR oder Dateiname mit Zielen")
@@ -588,7 +604,7 @@ async def main_async():
             file_name = Prompt.ask("Dateiname (z. B. results.json)")
             output_results(overall_results, args.format, file_name)
 
-    console.print("[bold magenta]Vielen Dank, dass Sie MightyScanner CLI – Ultimate Edition 2.0 verwenden![/bold magenta]")
+    console.print("[bold magenta]Vielen Dank, dass Sie Mintic Scanner CLI – Ultimate Edition 2.0 verwenden![/bold magenta]")
 
 def aggregate_target_info(target: str, results: list) -> dict:
     total_scanned = len(results)
