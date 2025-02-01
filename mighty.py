@@ -1,14 +1,13 @@
 #!/usr/bin/env python3
 """
-Mintic Scanner CLI – Ultimate Edition 2.0 (Interactive Wizard)
----------------------------------------------------------------
-Das ultimative, terminalbasierte Netzwerkscanner-Tool.  
-Beim Start erscheint sofort ein animiertes Mintic Scanner Banner mit Ladeeffekt.  
-Danach folgst du einem interaktiven Wizard mit nummerierten Menüs:
-  1. Scan-Typ auswählen (mit kurzer Beschreibung, was die Methode bewirkt)
-  2. Ziel (IP, URL, CIDR oder Dateiname) eingeben
-  3. Weitere Einstellungen (Portbereich, Host Discovery, Banner Grabbing, etc.)
-
+MightyScanner CLI – Ultimate Edition 2.0 (Interactive Wizard, Bilingual)
+---------------------------------------------------------------------------
+Das ultimative, terminalbasierte Netzwerkscanner-Tool.
+Beim Start erscheint ein animiertes Banner. Anschließend wählt der Nutzer
+seine Sprache (Englisch oder Deutsch) und wird dann durch einen interaktiven Wizard
+geführt, der in nummerierten Menüs den Scan-Typ, das Ziel, den Portbereich und weitere Optionen abfragt.
+Die Ergebnisse werden kompakt zusammengefasst ausgegeben.
+ 
 ACHTUNG: Dieses Tool darf ausschließlich in autorisierten Netzwerken verwendet werden!
 """
 
@@ -46,124 +45,108 @@ except ImportError:
 console = Console()
 
 ##########################################
+# Sprachwahl und Übersetzungen
+##########################################
+def select_language() -> str:
+    lang_choice = Prompt.ask("[bold]Select language / Sprache auswählen[/bold] (1: English, 2: Deutsch)", choices=["1", "2"], default="1")
+    return "en" if lang_choice == "1" else "de"
+
+LANG = select_language()
+
+# Übersetzungs-Dictionary: Alle Texte, die im interaktiven Wizard und anderen Prompts verwendet werden.
+TEXT = {
+    "en": {
+        "welcome": "Welcome to the interactive MightyScanner Wizard!",
+        "instruction": "Please follow the instructions. You can always accept the default values.",
+        "enter_target": "1. Enter target(s) (e.g. 192.168.1.1, example.com, 192.168.1.0/24 or filename)",
+        "enter_ports": "2. Enter port range (e.g. 22,80,8000-8100)",
+        "choose_scan": "3. Choose the scan type:",
+        "scan_options": {
+            "1": ("TCP Connect", "Establishes a full TCP connection. Results: Port status, banner (optional)."),
+            "2": ("SYN", "Sends a SYN packet without completing the connection. Results: Port status, OS fingerprint, banner (optional)."),
+            "3": ("UDP", "Sends a UDP packet. Results: No response may indicate open or filtered."),
+            "4": ("Null", "Sends a packet with no TCP flags. Stealth mode."),
+            "5": ("FIN", "Sends a FIN packet. Open ports typically do not respond."),
+            "6": ("XMAS", "Sends a packet with FIN, PSH, and URG flags. Stealth mode for detecting open ports."),
+            "7": ("ACK", "Sends an ACK packet. Detects filtering."),
+            "8": ("Fragment", "Sends fragmented packets to bypass firewalls."),
+            "9": ("Aggressive", "Combines TCP Connect and SYN scans. Results: Comprehensive info including OS fingerprint and vulnerability hints.")
+        },
+        "your_choice": "Your choice (1-9)",
+        "host_discovery": "4. Perform host discovery (Ping)? (y/n)",
+        "banner_grabbing": "5. Enable banner grabbing? (y/n)",
+        "timeout": "6. Enter timeout in seconds",
+        "concurrency": "7. Maximum concurrent tasks",
+        "output_format": "8. Choose output format (json, csv, xml, html)",
+        "output_file": "9. Enter filename for saving results (leave empty if not desired)",
+        "verbose": "10. Enable verbose mode? (y/n)",
+        "scan_loading": "Loading",
+        "scan_complete": "Scan complete!",
+        "summary_title": "Summary",
+        "save_results": "Save results to a file? (y/n)",
+        "enter_filename": "Enter filename (e.g. results.json)",
+        "thank_you": "Thank you for using MightyScanner CLI – Ultimate Edition 2.0!"
+    },
+    "de": {
+        "welcome": "Willkommen beim interaktiven MightyScanner Wizard!",
+        "instruction": "Bitte folge den Anweisungen. Du kannst jederzeit die vorgeschlagenen Standardwerte übernehmen.",
+        "enter_target": "1. Gib die Ziel(e) ein (z. B. 192.168.1.1, example.com, 192.168.1.0/24 oder Dateiname)",
+        "enter_ports": "2. Gib den Portbereich ein (z. B. 22,80,8000-8100)",
+        "choose_scan": "3. Wähle den Scan-Typ aus:",
+        "scan_options": {
+            "1": ("TCP Connect", "Stellt eine vollständige TCP-Verbindung her. Ergebnis: Portstatus, Banner (optional)."),
+            "2": ("SYN", "Sendet ein SYN-Paket ohne vollständige Verbindung. Ergebnis: Portstatus, OS-Fingerprint, Banner (optional)."),
+            "3": ("UDP", "Sendet ein UDP-Paket. Ergebnis: Keine Antwort kann offen oder gefiltert bedeuten."),
+            "4": ("Null", "Sendet ein Paket ohne gesetzte TCP-Flags. Stealth-Modus."),
+            "5": ("FIN", "Sendet ein FIN-Paket. Offene Ports antworten meist nicht."),
+            "6": ("XMAS", "Sendet ein Paket mit FIN, PSH und URG. Stealth-Modus zur Erkennung offener Ports."),
+            "7": ("ACK", "Sendet ein ACK-Paket. Erkennt Filterung."),
+            "8": ("Fragment", "Sendet fragmentierte Pakete zur Umgehung von Firewalls."),
+            "9": ("Aggressive", "Kombiniert TCP Connect und SYN-Scan. Ergebnis: Umfassende Informationen inkl. OS-Fingerprint und Vulnerability-Hinweisen.")
+        },
+        "your_choice": "Deine Wahl (1-9)",
+        "host_discovery": "4. Soll eine Host Discovery (Ping) durchgeführt werden? (y/n)",
+        "banner_grabbing": "5. Soll Banner Grabbing aktiviert werden? (y/n)",
+        "timeout": "6. Timeout in Sekunden",
+        "concurrency": "7. Max. gleichzeitige Tasks",
+        "output_format": "8. Ausgabeformat (json, csv, xml, html)",
+        "output_file": "9. Dateiname zur Speicherung (leer lassen, falls nicht gewünscht)",
+        "verbose": "10. Verbose Mode aktivieren? (y/n)",
+        "scan_loading": "Lade",
+        "scan_complete": "Scan abgeschlossen!",
+        "summary_title": "Zusammenfassung",
+        "save_results": "Ergebnisse in eine Datei speichern? (y/n)",
+        "enter_filename": "Dateiname (z. B. results.json)",
+        "thank_you": "Vielen Dank, dass Sie MightyScanner CLI – Ultimate Edition 2.0 verwenden!"
+    }
+}
+
+def t(key: str) -> str:
+    """Hilfsfunktion für Übersetzungen."""
+    return TEXT[LANG].get(key, key)
+
+##########################################
 # Banner-Animation beim Start
 ##########################################
 def display_banner():
     banner_art = r"""
-  __  __ _       _   _       ____          
- |  \/  (_)_ __ | |_(_) ___ / ___|         
- | |\/| | | '_ \| __| |/ __| \___ \         
- | |  | | | | | | |_| | (__   ___) |        
- |_|  |_|_|_| |_|\__|_|\___| |____/         
+  __  __ _       _   _       ____                                  
+ |  \/  (_)_ __ | |_(_) ___ / ___|  ___ __ _ _ __  _ __   ___ _ __  
+ | |\/| | | '_ \| __| |/ __| \___ \ / __/ _` | '_ \| '_ \ / _ \ '__| 
+ | |  | | | | | | |_| | (__   ___) | (_| (_| | | | | | | |  __/ |    
+ |_|  |_|_|_| |_|\__|_|\___| |____/ \___\__,_|_| |_|_| |_|\___|_|    
 """
     banner_title = "Mintic Scanner"
-    colors = ["red", "orange1", "yellow", "green", "blue", "magenta"]
-    # Erzeuge ein Panel mit dem Banner und Titel
-    panel = Panel(banner_art + "\n" + f"[bold white]{banner_title}[/bold white]", title="", subtitle="Loading...", style="bold white")
+    panel = Panel(banner_art + "\n" + f"[bold white]{banner_title}[/bold white]", title="", subtitle=t("scan_loading") + " 0%", style="bold white")
     with Live(panel, refresh_per_second=10, screen=True) as live:
-        for i in range(30):
-            color = colors[i % len(colors)]
+        for i in range(0, 101, 10):
+            color = ["red", "orange1", "yellow", "green", "blue", "magenta"][i % 6]
             panel.title = f"[bold {color}]{banner_title}[/bold {color}]"
-            panel.subtitle = f"[green]Lade {int(i/30*100)}%[/green]"
+            panel.subtitle = f"[green]{t('scan_loading')} {i}%[/green]"
             live.update(panel)
             time.sleep(0.1)
     console.print(Align.center(panel))
     time.sleep(1)
-
-##########################################
-# Zusatzfunktionen: Host Discovery & Reverse DNS
-##########################################
-def host_is_up(target: str) -> bool:
-    """Führt einen Ping-Test durch, um zu prüfen, ob ein Host erreichbar ist."""
-    try:
-        result = subprocess.run(["ping", "-c", "1", "-W", "1", target],
-                                stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-        return result.returncode == 0
-    except Exception:
-        return False
-
-def reverse_dns(target: str) -> str:
-    """Ermittelt den FQDN (Hostname) des Ziels."""
-    try:
-        hostname, _, _ = socket.gethostbyaddr(target)
-        return hostname
-    except Exception:
-        return ""
-
-##########################################
-# Zusatzfunktionen: Advanced OS Fingerprint & Vulnerability Scan
-##########################################
-def advanced_os_fingerprint(ttl, window) -> str:
-    """
-    Heuristisches OS‑Fingerprinting basierend auf TTL und TCP‑Fenstergröße.
-    (Diese Werte sind grobe Indikatoren.)
-    """
-    if ttl is None or window is None:
-        return "Unknown"
-    if ttl <= 64:
-        if window in [5840, 14600]:
-            return "Linux (wahrscheinlich)"
-        return "Linux/Unix"
-    elif ttl <= 128:
-        if window in [8192]:
-            return "Windows (wahrscheinlich)"
-        return "Windows"
-    elif ttl <= 255:
-        return "Netzwerkgerät/Firewall"
-    return "Unknown"
-
-def vulnerability_scan(target, port) -> str:
-    """Platzhalterhafte Vulnerability Detection für bekannte Ports."""
-    vuln_ports = {
-        21: "FTP: Default Credentials möglich",
-        23: "Telnet: Unsicher",
-        25: "SMTP: Mögliche Spoofing-Risiken",
-        80: "HTTP: Potenzielle Schwachstellen",
-        443: "HTTPS: SSL/TLS-Konfiguration prüfen"
-    }
-    return vuln_ports.get(port, "")
-
-##########################################
-# Parsing-Funktionen für Targets & Ports
-##########################################
-def parse_targets(target_str: str) -> list:
-    """
-    Parst Zieldefinitionen (Einzelhost, kommagetrennte Liste, CIDR).
-    Liefert eine sortierte Liste eindeutiger Ziele.
-    """
-    targets = set()
-    for part in target_str.split(','):
-        part = part.strip()
-        if "/" in part:
-            try:
-                net = ipaddress.ip_network(part, strict=False)
-                for ip in net.hosts():
-                    targets.add(str(ip))
-            except Exception as e:
-                console.log(f"[red]Fehler beim Parsen des Netzes '{part}': {e}[/red]")
-        else:
-            targets.add(part)
-    return sorted(targets)
-
-def parse_ports(port_str: str) -> list:
-    """
-    Parst eine Portangabe (z. B. "22,80,8000-8100") in eine sortierte Liste von Portnummern.
-    """
-    ports = set()
-    for part in port_str.split(','):
-        part = part.strip()
-        if '-' in part:
-            try:
-                start, end = part.split('-')
-                ports.update(range(int(start), int(end) + 1))
-            except Exception as e:
-                console.log(f"[red]Fehler beim Parsen des Portbereichs '{part}': {e}[/red]")
-        else:
-            try:
-                ports.add(int(part))
-            except Exception as e:
-                console.log(f"[red]Fehler beim Parsen des Ports '{part}': {e}[/red]")
-    return sorted(ports)
 
 ##########################################
 # Scan-Funktionen – Verschiedene Methoden
@@ -336,7 +319,7 @@ async def scan_target(target: str, ports: list, scan_type: str, timeout: float, 
         BarColumn(),
         TimeElapsedColumn()
     )
-    task_id = progress.add_task(f"Scanne {target}", total=len(tasks))
+    task_id = progress.add_task(f"Scanning {target}", total=len(tasks))
     with progress:
         for coro in asyncio.as_completed(tasks):
             res = await coro
@@ -374,7 +357,7 @@ def aggregate_target_info(target: str, results: list) -> dict:
 ##########################################
 def print_results(overall_results: dict):
     for target, results in overall_results.items():
-        table = Table(title=f"Ergebnisse für {target}", show_lines=True)
+        table = Table(title=f"Results for {target}", show_lines=True)
         table.add_column("Port", justify="right", style="cyan")
         table.add_column("Status", style="green")
         table.add_column("Banner", style="yellow")
@@ -434,58 +417,58 @@ def output_results(data: dict, output_format: str, output_file: str):
     try:
         with open(output_file, "w", encoding="utf-8") as f:
             f.write(out_str)
-        console.print(f"[green]Ergebnisse in '{output_file}' gespeichert.[/green]")
+        console.print(f"[green]Results saved to '{output_file}'.[/green]")
     except Exception as e:
-        console.print(f"[red]Fehler beim Schreiben in '{output_file}': {e}[/red]")
+        console.print(f"[red]Error writing to '{output_file}': {e}[/red]")
 
 ##########################################
 # Interaktiver Wizard – Nummeriertes Menü mit Methodenerklärungen
 ##########################################
 def interactive_wizard() -> argparse.Namespace:
-    console.print("[bold blue]Willkommen beim interaktiven MightyScanner Wizard![/bold blue]")
-    console.print("Bitte folge den Anweisungen. Du kannst jederzeit die vorgeschlagenen Standardwerte übernehmen.\n")
+    console.print(f"[bold blue]{TEXT[LANG]['welcome']}[/bold blue]")
+    console.print(f"[italic]{TEXT[LANG]['instruction']}[/italic]\n")
     
-    target = Prompt.ask("[bold]1. Gib die Ziel(e) ein[/bold] (z. B. 192.168.1.1, example.com, 192.168.1.0/24 oder Dateiname)", default="127.0.0.1")
+    target = Prompt.ask(f"[bold]{TEXT[LANG]['enter_target']}[/bold]", default="127.0.0.1")
     if os.path.isfile(target):
         try:
             with open(target, "r") as f:
                 targets_raw = f.read().strip()
             target = targets_raw.replace("\n", ",")
-            console.print("[green]Ziele aus Datei erfolgreich gelesen.[/green]")
+            console.print("[green]Targets successfully read from file.[/green]" if LANG=="en" else "[green]Ziele aus Datei erfolgreich gelesen.[/green]")
         except Exception as e:
-            console.log(f"[red]Fehler beim Lesen der Datei: {e}[/red]")
+            console.log(f"[red]Error reading file: {e}[/red]" if LANG=="en" else f"[red]Fehler beim Lesen der Datei: {e}[/red]")
     
-    ports = Prompt.ask("[bold]2. Gib den Portbereich ein[/bold] (z. B. 22,80,8000-8100)", default="1-1024")
+    ports = Prompt.ask(f"[bold]{TEXT[LANG]['enter_ports']}[/bold]", default="1-1024")
     
-    console.print("\n[bold]3. Wähle den Scan-Typ aus:[/bold]")
+    console.print(f"\n[bold]{TEXT[LANG]['choose_scan']}[/bold]")
     menu_options = {
-        "1": ("TCP Connect", "Stellt eine vollständige TCP-Verbindung her. Ergebnis: Portstatus, Banner (optional)"),
-        "2": ("SYN", "Sendet ein SYN-Paket ohne vollständige Verbindung. Ergebnis: Portstatus, OS-Fingerprint, Banner (optional)"),
-        "3": ("UDP", "Sendet ein UDP-Paket. Ergebnis: Keine Antwort kann offen oder gefiltert bedeuten."),
-        "4": ("Null", "Sendet ein Paket ohne gesetzte TCP-Flags. Stealth-Modus."),
-        "5": ("FIN", "Sendet ein FIN-Paket. Offene Ports antworten meist nicht."),
-        "6": ("XMAS", "Sendet ein Paket mit FIN, PSH und URG. Stealth-Modus zur Erkennung offener Ports."),
-        "7": ("ACK", "Sendet ein ACK-Paket. Erkennt Filterung."),
-        "8": ("Fragment", "Sendet fragmentierte Pakete zur Umgehung von Firewalls."),
-        "9": ("Aggressive", "Kombiniert TCP Connect und SYN-Scan. Ergebnis: Umfassende Informationen inkl. OS-Fingerprint und Vulnerability-Hinweisen.")
+        "1": ("TCP Connect", "Establishes a full TCP connection. Results: Port status, banner (optional)." if LANG=="en" else "Stellt eine vollständige TCP-Verbindung her. Ergebnis: Portstatus, Banner (optional)."),
+        "2": ("SYN", "Sends a SYN packet without completing the connection. Results: Port status, OS fingerprint, banner (optional)." if LANG=="en" else "Sendet ein SYN-Paket ohne vollständige Verbindung. Ergebnis: Portstatus, OS-Fingerprint, Banner (optional)."),
+        "3": ("UDP", "Sends a UDP packet. Results: No response may indicate open or filtered." if LANG=="en" else "Sendet ein UDP-Paket. Ergebnis: Keine Antwort kann offen oder gefiltert bedeuten."),
+        "4": ("Null", "Sends a packet with no TCP flags. Stealth mode." if LANG=="en" else "Sendet ein Paket ohne gesetzte TCP-Flags. Stealth-Modus."),
+        "5": ("FIN", "Sends a FIN packet. Open ports typically do not respond." if LANG=="en" else "Sendet ein FIN-Paket. Offene Ports antworten meist nicht."),
+        "6": ("XMAS", "Sends a packet with FIN, PSH and URG flags. Stealth mode for detecting open ports." if LANG=="en" else "Sendet ein Paket mit FIN, PSH und URG. Stealth-Modus zur Erkennung offener Ports."),
+        "7": ("ACK", "Sends an ACK packet to detect filtering." if LANG=="en" else "Sendet ein ACK-Paket. Erkennt Filterung."),
+        "8": ("Fragment", "Sends fragmented packets to bypass firewalls." if LANG=="en" else "Sendet fragmentierte Pakete zur Umgehung von Firewalls."),
+        "9": ("Aggressive", "Combines TCP Connect and SYN scans. Results: Comprehensive info including OS fingerprint and vulnerability hints." if LANG=="en" else "Kombiniert TCP Connect und SYN-Scan. Ergebnis: Umfassende Informationen inkl. OS-Fingerprint und Vulnerability-Hinweisen.")
     }
     for key, (name, desc) in menu_options.items():
         console.print(f"[yellow]   {key}.[/yellow] {name} - {desc}")
-    choice = Prompt.ask("[bold]Deine Wahl (1-9)[/bold]", choices=[str(i) for i in range(1, 10)], default="1")
+    choice = Prompt.ask(f"[bold]{TEXT[LANG]['your_choice']}[/bold]", choices=[str(i) for i in range(1, 10)], default="1")
     scan_type = menu_options[choice][0].lower()
-    console.print(f"[italic green]Du hast '{menu_options[choice][0]}' gewählt: {menu_options[choice][1]}[/italic green]\n")
+    console.print(f"[italic green]You selected '{menu_options[choice][0]}': {menu_options[choice][1]}[/italic green]" if LANG=="en" else f"[italic green]Du hast '{menu_options[choice][0]}' gewählt: {menu_options[choice][1]}[/italic green]\n")
     
-    host_disc_input = Prompt.ask("[bold]4. Soll eine Host Discovery (Ping) durchgeführt werden? (y/n)[/bold]", choices=["y", "n"], default="n")
+    host_disc_input = Prompt.ask(f"[bold]{TEXT[LANG]['host_discovery']}[/bold]", choices=["y", "n"], default="n")
     host_discovery_flag = True if host_disc_input.lower() == "y" else False
     
-    grab_banner_input = Prompt.ask("[bold]5. Soll Banner Grabbing aktiviert werden? (y/n)[/bold]", choices=["y", "n"], default="n")
+    grab_banner_input = Prompt.ask(f"[bold]{TEXT[LANG]['banner_grabbing']}[/bold]", choices=["y", "n"], default="n")
     grab_banner = True if grab_banner_input.lower() == "y" else False
     
-    timeout = float(Prompt.ask("[bold]6. Timeout in Sekunden[/bold]", default="1.0"))
-    concurrency = int(Prompt.ask("[bold]7. Max. gleichzeitige Tasks[/bold]", default="500"))
-    output_format = Prompt.ask("[bold]8. Ausgabeformat[/bold]", choices=["json", "csv", "xml", "html"], default="json")
-    output_file = Prompt.ask("[bold]9. Dateiname zur Speicherung[/bold] (leer lassen, falls nicht gewünscht)", default="")
-    verbose_input = Prompt.ask("[bold]10. Verbose Mode aktivieren? (y/n)[/bold]", choices=["y", "n"], default="n")
+    timeout = float(Prompt.ask(f"[bold]{TEXT[LANG]['timeout']}[/bold]", default="1.0"))
+    concurrency = int(Prompt.ask(f"[bold]{TEXT[LANG]['concurrency']}[/bold]", default="500"))
+    output_format = Prompt.ask(f"[bold]{TEXT[LANG]['output_format']}[/bold]", choices=["json", "csv", "xml", "html"], default="json")
+    output_file = Prompt.ask(f"[bold]{TEXT[LANG]['output_file']}[/bold]", default="")
+    verbose_input = Prompt.ask(f"[bold]{TEXT[LANG]['verbose']}[/bold]", choices=["y", "n"], default="n")
     verbose = True if verbose_input.lower() == "y" else False
 
     args = argparse.Namespace(
@@ -515,11 +498,11 @@ def display_splash():
  |_|  |_|_|_| |_|\__|_|\___| |____/ \___\__,_|_| |_|_| |_|\___|_|    
 """
     panel = Panel(splash_art, title="[bold magenta]Mintic Scanner CLI – Ultimate Edition 2.0[/bold magenta]",
-                  subtitle="[green]Das mächtigste Netzwerkscanner-Tool der Welt[/green]",
-                  style="bold blue")
+                  subtitle=f"[green]{TEXT[LANG]['scan_loading']} 0%[/green]", style="bold blue")
     with Live(panel, refresh_per_second=10, screen=True) as live:
         for i in range(0, 101, 10):
-            panel.title = f"[bold magenta]Mintic Scanner CLI – Ultimate Edition 2.0[/bold magenta] [yellow]Lade {i}%[/yellow]"
+            panel.title = f"[bold magenta]Mintic Scanner CLI – Ultimate Edition 2.0[/bold magenta]"
+            panel.subtitle = f"[green]{TEXT[LANG]['scan_loading']} {i}%[/green]"
             live.update(panel)
             time.sleep(0.1)
     console.print(Align.center(panel))
@@ -533,55 +516,56 @@ async def main_async():
         args = interactive_wizard()
     else:
         parser = argparse.ArgumentParser(
-            description="Mintic Scanner CLI – Ultimate Edition 2.0: Ein High-End Netzwerkscanner für das Terminal",
-            epilog="Nur in autorisierten Netzwerken verwenden!"
+            description="Mintic Scanner CLI – Ultimate Edition 2.0: A high-end network scanner for the terminal",
+            epilog="Use only in authorized networks!"
         )
-        parser.add_argument("target", help="Target(s): Einzelhost, kommagetrennte Liste, CIDR oder Dateiname mit Zielen")
-        parser.add_argument("-p", "--ports", default="1-1024", help="Ports zum Scannen (z. B. '22,80,8000-8100'). Standard: 1-1024")
+        parser.add_argument("target", help="Target(s): Single host, comma-separated list, CIDR or filename")
+        parser.add_argument("-p", "--ports", default="1-1024", help="Ports to scan (e.g. '22,80,8000-8100'). Default: 1-1024")
         parser.add_argument("-s", "--scan-type", choices=["connect", "syn", "udp", "null", "fin", "xmas", "ack", "fragment", "aggressive"], default="connect",
-                            help="Scan-Typ: connect, syn, udp, null, fin, xmas, ack, fragment oder aggressive")
-        parser.add_argument("--banner", action="store_true", help="Aktiviere Banner Grabbing")
-        parser.add_argument("--timeout", type=float, default=1.0, help="Timeout in Sekunden (Standard: 1.0)")
-        parser.add_argument("--concurrency", type=int, default=500, help="Max. gleichzeitige Tasks (Standard: 500)")
-        parser.add_argument("--host-discovery", action="store_true", help="Host Discovery (Ping) vor dem Scan durchführen")
+                            help="Scan type: connect, syn, udp, null, fin, xmas, ack, fragment or aggressive")
+        parser.add_argument("--banner", action="store_true", help="Enable banner grabbing")
+        parser.add_argument("--timeout", type=float, default=1.0, help="Timeout in seconds (default: 1.0)")
+        parser.add_argument("--concurrency", type=int, default=500, help="Maximum concurrent tasks (default: 500)")
+        parser.add_argument("--host-discovery", action="store_true", help="Perform host discovery (Ping) before scanning")
         parser.add_argument("-f", "--format", choices=["json", "csv", "xml", "html"], default="json",
-                            help="Ausgabeformat (Standard: json)")
-        parser.add_argument("-o", "--output", help="Datei, in die die Ergebnisse geschrieben werden sollen")
-        parser.add_argument("-v", "--verbose", action="store_true", help="Ausführliche Log-Ausgaben")
-        parser.add_argument("--interactive", action="store_true", help="Interaktiver Eingabemodus (Wizard)")
+                            help="Output format (default: json)")
+        parser.add_argument("-o", "--output", help="Filename to save results")
+        parser.add_argument("-v", "--verbose", action="store_true", help="Enable verbose output")
+        parser.add_argument("--interactive", action="store_true", help="Interactive mode (Wizard)")
         args = parser.parse_args()
 
     display_splash()
 
     if args.verbose:
-        console.print("[bold blue]Verbose Mode aktiviert.[/bold blue]")
+        console.print("[bold blue]Verbose Mode activated.[/bold blue]")
 
     targets_raw = parse_targets(args.target)
     if getattr(args, "host_discovery", False):
-        console.print("[bold yellow]Führe Host Discovery durch...[/bold yellow]")
+        console.print("[bold yellow]Performing host discovery...[/bold yellow]" if LANG=="en" else "[bold yellow]Führe Host Discovery durch...[/bold yellow]")
         targets_up = [t for t in targets_raw if host_is_up(t)]
-        console.print(f"[green]Erreichbare Ziele: {targets_up}[/green]")
+        console.print(f"[green]Reachable targets: {targets_up}[/green]" if LANG=="en" else f"[green]Erreichbare Ziele: {targets_up}[/green]")
         targets = targets_up
     else:
         targets = targets_raw
 
     ports = parse_ports(args.ports)
     console.print(f"[bold green]Targets:[/bold green] {targets}")
-    console.print(f"[bold green]Ports:[/bold green] {ports[0]} bis {ports[-1]} (insgesamt {len(ports)})")
-    console.print(f"[bold green]Scan-Typ:[/bold green] {args.scan_type}\n")
+    console.print(f"[bold green]Ports:[/bold green] {ports[0]} to {ports[-1]} (total {len(ports)})" if LANG=="en" else f"[bold green]Ports:[/bold green] {ports[0]} bis {ports[-1]} (insgesamt {len(ports)})")
+    console.print(f"[bold green]Scan type:[/bold green] {args.scan_type}" if LANG=="en" else f"[bold green]Scan-Typ:[/bold green] {args.scan_type}")
+    console.print("\n")
 
     if args.scan_type in ["syn", "udp", "null", "fin", "xmas", "ack", "fragment", "aggressive"] and os.geteuid() != 0:
-        console.print("[yellow]Achtung: Für den gewählten Scan-Typ sind in der Regel Root-Rechte erforderlich![/yellow]")
+        console.print("[yellow]Warning: Root privileges are usually required for the selected scan type![/yellow]" if LANG=="en" else "[yellow]Achtung: Für den gewählten Scan-Typ sind in der Regel Root-Rechte erforderlich![/yellow]")
 
     overall_results = await scan_all_targets(targets, ports, args.scan_type, args.timeout, args.banner, args.concurrency)
-    console.print("[bold green]Scan abgeschlossen![/bold green]\n")
+    console.print(f"\n[bold green]{TEXT[LANG]['scan_complete']}[/bold green]\n")
     print_results(overall_results)
 
-    summary_table = Table(title="Zusammenfassung", show_lines=True)
+    summary_table = Table(title=TEXT[LANG]["summary_title"], show_lines=True)
     summary_table.add_column("Target", style="cyan")
     summary_table.add_column("Hostname", style="magenta")
-    summary_table.add_column("Gescannte Ports", justify="right", style="yellow")
-    summary_table.add_column("Offene Ports (#)", justify="right", style="green")
+    summary_table.add_column("Scanned Ports", justify="right", style="yellow")
+    summary_table.add_column("Open Ports (#)", justify="right", style="green")
     summary_table.add_column("OS", style="blue")
     summary_table.add_column("Vulnerabilities", style="red")
     for tgt, results in overall_results.items():
@@ -599,12 +583,12 @@ async def main_async():
     if args.output:
         output_results(overall_results, args.format, args.output)
     else:
-        save_choice = Prompt.ask("Ergebnisse in eine Datei speichern? (y/n)", choices=["y", "n"], default="n")
+        save_choice = Prompt.ask(TEXT[LANG]["save_results"], choices=["y", "n"], default="n")
         if save_choice.lower() == "y":
-            file_name = Prompt.ask("Dateiname (z. B. results.json)")
+            file_name = Prompt.ask(TEXT[LANG]["enter_filename"])
             output_results(overall_results, args.format, file_name)
 
-    console.print("[bold magenta]Vielen Dank, dass Sie Mintic Scanner CLI – Ultimate Edition 2.0 verwenden![/bold magenta]")
+    console.print(f"[bold magenta]{TEXT[LANG]['thank_you']}[/bold magenta]")
 
 def aggregate_target_info(target: str, results: list) -> dict:
     total_scanned = len(results)
@@ -626,7 +610,7 @@ def main():
     try:
         asyncio.run(main_async())
     except KeyboardInterrupt:
-        console.print("[red]Scan durch Benutzer unterbrochen.[/red]")
+        console.print("[red]Scan interrupted by user.[/red]" if LANG=="en" else "[red]Scan durch Benutzer unterbrochen.[/red]")
         sys.exit(1)
 
 if __name__ == "__main__":
