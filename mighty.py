@@ -1,14 +1,15 @@
 #!/usr/bin/env python3
 """
-MightyScanner CLI – Ultimate Edition 2.0 (Userfriendly)
---------------------------------------------------------
-Das ultimative Netzwerkscanner-Tool für das Terminal – jetzt noch benutzerfreundlicher!
+MightyScanner CLI – Ultimate Edition 2.0 (Userfriendly & Kompakt)
+------------------------------------------------------------------
+Das ultimative, terminalbasierte Netzwerkscanner-Tool – jetzt mit noch mehr Informationen
+zum Ziel in einer kompakten Zusammenfassung.
 
 Funktionen:
   • Multi‑Target‑Scanning (Einzelhost, kommagetrennte Liste, CIDR oder aus Datei)
   • Vorab-Host‑Discovery (Ping) und Reverse DNS Lookup
   • Scan‑Modi:
-         - connect: Asynchroner TCP‑Connect‑Scan (mit optionalem Banner Grabbing)
+         - connect: Asynchroner TCP‑Connect‑Scan (optional mit Banner Grabbing)
          - syn: SYN‑Scan via Scapy (mit heuristischem OS‑Fingerprinting)
          - udp: UDP‑Scan via Scapy
          - null: Null Scan (keine Flags – stealthy)
@@ -18,8 +19,10 @@ Funktionen:
          - fragment: Fragmentierter Scan (um Firewalls zu umgehen)
          - aggressive: Kombiniert TCP‑Connect und SYN‑Scan
   • Interaktiver Wizard‑Modus mit ausführlichen, farbigen Anweisungen
-  • Flexible Ausgabeformate (JSON, CSV, XML, HTML) und abschließende Zusammenfassung
-
+  • Ergebnisse werden kompakt zusammengefasst:
+         - Anzahl gescannter Ports, offene Ports, OS-Fingerprint und Vulnerability-Hinweise
+  • Flexible Ausgabeformate (JSON, CSV, XML, HTML)
+ 
 ACHTUNG: Nur in autorisierten Netzwerken verwenden!
 """
 
@@ -341,6 +344,31 @@ async def scan_all_targets(targets: list, ports: list, scan_type: str, timeout: 
     return overall
 
 ##########################################
+# Aggregation der Zielinformationen (Kompakte Zusammenfassung)
+##########################################
+
+def aggregate_target_info(target: str, results: list) -> dict:
+    total_scanned = len(results)
+    open_ports = [str(r["port"]) for r in results if r["status"] == "open"]
+    os_list = [r["os"] for r in results if r["status"] == "open" and r["os"]]
+    unique_os = set(os_list)
+    if len(unique_os) == 1:
+         os_info = unique_os.pop()
+    elif len(unique_os) > 1:
+         os_info = "Mixed"
+    else:
+         os_info = "N/A"
+    vuln_list = [r["vuln"] for r in results if r["status"] == "open" and r["vuln"]]
+    unique_vuln = ", ".join(sorted(set(vuln_list))) if vuln_list else "None"
+    return {
+         "scanned": total_scanned,
+         "open_ports": ", ".join(open_ports) if open_ports else "None",
+         "open_count": len(open_ports),
+         "os": os_info,
+         "vuln": unique_vuln
+    }
+
+##########################################
 # Ausgabe der Ergebnisse & Zusammenfassung
 ##########################################
 
@@ -417,7 +445,7 @@ def output_results(data: dict, output_format: str, output_file: str):
 def interactive_wizard() -> argparse.Namespace:
     console.print("[bold blue]Willkommen beim interaktiven MightyScanner Wizard![/bold blue]")
     console.print("Bitte folge den Anweisungen. Du kannst jederzeit die vorgeschlagenen Standardwerte übernehmen.")
-    target = Prompt.ask("[bold]Ziel(e) eingeben[/bold] (Beispiele: 192.168.1.1, example.com, 192.168.1.0/24 oder ein Dateiname)", default="127.0.0.1")
+    target = Prompt.ask("[bold]Ziel(e) eingeben[/bold] (z. B. 192.168.1.1, example.com, 192.168.1.0/24 oder Dateiname)", default="127.0.0.1")
     if os.path.isfile(target):
         try:
             with open(target, "r") as f:
@@ -469,8 +497,14 @@ def display_splash():
     panel = Panel(splash_art, title="[bold magenta]MightyScanner CLI – Ultimate Edition 2.0[/bold magenta]",
                   subtitle="[green]Das mächtigste Netzwerkscanner-Tool der Welt[/green]",
                   style="bold blue")
+    # Animation: Ladeeffekt simulieren
+    with Live(panel, refresh_per_second=4, screen=True) as live:
+        for i in range(0, 101, 10):
+            panel.title = f"[bold magenta]MightyScanner CLI – Ultimate Edition 2.0[/bold magenta] [yellow]Lade {i}%[/yellow]"
+            live.update(panel)
+            time.sleep(0.3)
     console.print(Align.center(panel))
-    time.sleep(2)
+    time.sleep(1)
 
 ##########################################
 # Hauptprogramm
@@ -499,6 +533,8 @@ async def main_async():
         parser.add_argument("--interactive", action="store_true", help="Interaktiver Eingabemodus (Wizard)")
         args = parser.parse_args()
 
+    display_splash()
+
     if args.verbose:
         console.print("[bold blue]Verbose Mode aktiviert.[/bold blue]")
 
@@ -523,14 +559,24 @@ async def main_async():
     console.print("[bold green]Scan abgeschlossen![/bold green]\n")
     print_results(overall_results)
 
-    summary_table = Table(title="Zusammenfassung", show_lines=True)
+    # Erstelle eine kompakte Zusammenfassung pro Ziel
+    summary_table = Table(title="Zusammenfassung der Zielinformationen", show_lines=True)
     summary_table.add_column("Target", style="cyan")
     summary_table.add_column("Hostname", style="magenta")
-    summary_table.add_column("Offene Ports", justify="right", style="green")
+    summary_table.add_column("Gescannte Ports", justify="right", style="yellow")
+    summary_table.add_column("Offene Ports (#)", justify="right", style="green")
+    summary_table.add_column("OS", style="blue")
+    summary_table.add_column("Vulnerabilities", style="red")
     for tgt, results in overall_results.items():
-        open_ports = [str(r["port"]) for r in results if r["status"] == "open"]
-        hostname = reverse_dns(tgt)
-        summary_table.add_row(tgt, hostname, ", ".join(open_ports))
+        agg = aggregate_target_info(tgt, results)
+        summary_table.add_row(
+            tgt,
+            reverse_dns(tgt) or "N/A",
+            str(agg["scanned"]),
+            f'{agg["open_count"]} ({agg["open_ports"]})',
+            agg["os"],
+            agg["vuln"]
+        )
     console.print(summary_table)
 
     if args.output:
@@ -542,6 +588,27 @@ async def main_async():
             output_results(overall_results, args.format, file_name)
 
     console.print("[bold magenta]Vielen Dank, dass Sie MightyScanner CLI – Ultimate Edition 2.0 verwenden![/bold magenta]")
+
+def aggregate_target_info(target: str, results: list) -> dict:
+    total_scanned = len(results)
+    open_ports = [str(r["port"]) for r in results if r["status"] == "open"]
+    os_list = [r["os"] for r in results if r["status"] == "open" and r["os"]]
+    unique_os = set(os_list)
+    if len(unique_os) == 1:
+         os_info = unique_os.pop()
+    elif len(unique_os) > 1:
+         os_info = "Mixed"
+    else:
+         os_info = "N/A"
+    vuln_list = [r["vuln"] for r in results if r["status"] == "open" and r["vuln"]]
+    unique_vuln = ", ".join(sorted(set(vuln_list))) if vuln_list else "None"
+    return {
+         "scanned": total_scanned,
+         "open_ports": ", ".join(open_ports) if open_ports else "None",
+         "open_count": len(open_ports),
+         "os": os_info,
+         "vuln": unique_vuln
+    }
 
 def main():
     try:
