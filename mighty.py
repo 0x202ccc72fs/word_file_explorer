@@ -2,27 +2,9 @@
 """
 MightyScanner CLI – Ultimate Edition 2.0 (Userfriendly & Kompakt)
 ------------------------------------------------------------------
-Das ultimative, terminalbasierte Netzwerkscanner-Tool – jetzt mit noch mehr Informationen
-zum Ziel in einer kompakten Zusammenfassung.
+Das ultimative, terminalbasierte Netzwerkscanner-Tool – mit animiertem Splashscreen, 
+interaktivem Wizard und einem nummerierten Menü, das dir erklärt, was du von den einzelnen Scan-Methoden erwarten kannst.
 
-Funktionen:
-  • Multi‑Target‑Scanning (Einzelhost, kommagetrennte Liste, CIDR oder aus Datei)
-  • Vorab-Host‑Discovery (Ping) und Reverse DNS Lookup
-  • Scan‑Modi:
-         - connect: Asynchroner TCP‑Connect‑Scan (optional mit Banner Grabbing)
-         - syn: SYN‑Scan via Scapy (mit heuristischem OS‑Fingerprinting)
-         - udp: UDP‑Scan via Scapy
-         - null: Null Scan (keine Flags – stealthy)
-         - fin: FIN Scan (stealth)
-         - xmas: XMAS Scan (FIN, PSH, URG gesetzt)
-         - ack: ACK Scan (zur Filtererkennung)
-         - fragment: Fragmentierter Scan (um Firewalls zu umgehen)
-         - aggressive: Kombiniert TCP‑Connect und SYN‑Scan
-  • Interaktiver Wizard‑Modus mit ausführlichen, farbigen Anweisungen
-  • Ergebnisse werden kompakt zusammengefasst:
-         - Anzahl gescannter Ports, offene Ports, OS-Fingerprint und Vulnerability-Hinweise
-  • Flexible Ausgabeformate (JSON, CSV, XML, HTML)
- 
 ACHTUNG: Nur in autorisierten Netzwerken verwenden!
 """
 
@@ -352,12 +334,7 @@ def aggregate_target_info(target: str, results: list) -> dict:
     open_ports = [str(r["port"]) for r in results if r["status"] == "open"]
     os_list = [r["os"] for r in results if r["status"] == "open" and r["os"]]
     unique_os = set(os_list)
-    if len(unique_os) == 1:
-         os_info = unique_os.pop()
-    elif len(unique_os) > 1:
-         os_info = "Mixed"
-    else:
-         os_info = "N/A"
+    os_info = unique_os.pop() if len(unique_os) == 1 else ("Mixed" if len(unique_os) > 1 else "N/A")
     vuln_list = [r["vuln"] for r in results if r["status"] == "open" and r["vuln"]]
     unique_vuln = ", ".join(sorted(set(vuln_list))) if vuln_list else "None"
     return {
@@ -439,13 +416,14 @@ def output_results(data: dict, output_format: str, output_file: str):
         console.print(f"[red]Fehler beim Schreiben in '{output_file}': {e}[/red]")
 
 ##########################################
-# Interaktiver Wizard (Benutzerfreundliche Eingabe)
+# Interaktiver Wizard (Benutzerfreundliche Eingabe) mit nummeriertem Menü und Methodenerklärungen
 ##########################################
 
 def interactive_wizard() -> argparse.Namespace:
     console.print("[bold blue]Willkommen beim interaktiven MightyScanner Wizard![/bold blue]")
-    console.print("Bitte folge den Anweisungen. Du kannst jederzeit die vorgeschlagenen Standardwerte übernehmen.")
-    target = Prompt.ask("[bold]Ziel(e) eingeben[/bold] (z. B. 192.168.1.1, example.com, 192.168.1.0/24 oder Dateiname)", default="127.0.0.1")
+    console.print("Bitte folge den Anweisungen. Du kannst jederzeit die vorgeschlagenen Standardwerte übernehmen.\n")
+    
+    target = Prompt.ask("[bold]1. Gib die Ziel(e) ein[/bold] (z. B. 192.168.1.1, example.com, 192.168.1.0/24 oder Dateiname)", default="127.0.0.1")
     if os.path.isfile(target):
         try:
             with open(target, "r") as f:
@@ -454,17 +432,38 @@ def interactive_wizard() -> argparse.Namespace:
             console.print("[green]Ziele aus Datei erfolgreich gelesen.[/green]")
         except Exception as e:
             console.log(f"[red]Fehler beim Lesen der Datei: {e}[/red]")
-    ports = Prompt.ask("[bold]Portbereich eingeben[/bold] (z. B. 22,80,8000-8100)", default="1-1024")
-    scan_type = Prompt.ask("[bold]Scan-Typ wählen[/bold]", choices=["connect", "syn", "udp", "null", "fin", "xmas", "ack", "fragment", "aggressive"], default="connect")
-    host_disc_input = Prompt.ask("[bold]Host Discovery durchführen?[/bold] (Ping) (y/n)", choices=["y", "n"], default="n")
+    
+    ports = Prompt.ask("[bold]2. Gib den Portbereich ein[/bold] (z. B. 22,80,8000-8100)", default="1-1024")
+    
+    console.print("\n[bold]3. Wähle den Scan-Typ aus:[/bold]")
+    menu_options = {
+        "1": ("TCP Connect", "Stellt eine vollständige TCP-Verbindung her. Ergebnis: Offen/geschlossen, Banner (falls aktiviert)"),
+        "2": ("SYN", "Sendet ein SYN-Paket, ohne die Verbindung vollständig aufzubauen. Ergebnis: Portstatus, OS-Fingerprint und Banner (falls aktiviert)"),
+        "3": ("UDP", "Sendet ein UDP-Paket. Ergebnis: Keine Antwort kann offen oder gefiltert bedeuten."),
+        "4": ("Null", "Sendet ein Paket ohne gesetzte TCP-Flags. Ergebnis: Stealth-Modus, basierend auf fehlender Antwort."),
+        "5": ("FIN", "Sendet ein FIN-Paket. Ergebnis: Offene Ports antworten meist nicht."),
+        "6": ("XMAS", "Sendet ein Paket mit FIN, PSH und URG. Ergebnis: Stealth-Modus zur Erkennung offener Ports."),
+        "7": ("ACK", "Sendet ein ACK-Paket, um Filterung zu erkennen. Ergebnis: Erkennt, ob der Port gefiltert ist."),
+        "8": ("Fragment", "Sendet fragmentierte Pakete, um Firewalls zu umgehen. Ergebnis: Erkennung offener Ports trotz Fragmentierung."),
+        "9": ("Aggressive", "Kombiniert TCP Connect und SYN-Scan. Ergebnis: Umfassende Informationen inkl. OS-Fingerprint und Vulnerability-Hinweisen.")
+    }
+    for key, (name, desc) in menu_options.items():
+        console.print(f"[yellow]   {key}.[/yellow] {name} - {desc}")
+    choice = Prompt.ask("[bold]Deine Wahl (1-9)[/bold]", choices=[str(i) for i in range(1, 10)], default="1")
+    scan_type = menu_options[choice][0].lower()  # z.B. "connect", "syn", etc.
+    console.print(f"[italic green]Du hast '{menu_options[choice][0]}' gewählt: {menu_options[choice][1]}[/italic green]\n")
+    
+    host_disc_input = Prompt.ask("[bold]4. Soll eine Host Discovery (Ping) durchgeführt werden? (y/n)[/bold]", choices=["y", "n"], default="n")
     host_discovery_flag = True if host_disc_input.lower() == "y" else False
-    grab_banner_input = Prompt.ask("[bold]Banner Grabbing aktivieren?[/bold] (y/n)", choices=["y", "n"], default="n")
+    
+    grab_banner_input = Prompt.ask("[bold]5. Soll Banner Grabbing aktiviert werden? (y/n)[/bold]", choices=["y", "n"], default="n")
     grab_banner = True if grab_banner_input.lower() == "y" else False
-    timeout = float(Prompt.ask("[bold]Timeout[/bold] in Sekunden", default="1.0"))
-    concurrency = int(Prompt.ask("[bold]Max. gleichzeitige Tasks[/bold]", default="500"))
-    output_format = Prompt.ask("[bold]Ausgabeformat[/bold]", choices=["json", "csv", "xml", "html"], default="json")
-    output_file = Prompt.ask("[bold]Dateiname zur Speicherung[/bold] (leer lassen, falls nicht gewünscht)", default="")
-    verbose_input = Prompt.ask("[bold]Verbose Mode aktivieren?[/bold] (y/n)", choices=["y", "n"], default="n")
+    
+    timeout = float(Prompt.ask("[bold]6. Timeout in Sekunden[/bold]", default="1.0"))
+    concurrency = int(Prompt.ask("[bold]7. Max. gleichzeitige Tasks[/bold]", default="500"))
+    output_format = Prompt.ask("[bold]8. Ausgabeformat[/bold]", choices=["json", "csv", "xml", "html"], default="json")
+    output_file = Prompt.ask("[bold]9. Dateiname zur Speicherung[/bold] (leer lassen, falls nicht gewünscht)", default="")
+    verbose_input = Prompt.ask("[bold]10. Verbose Mode aktivieren? (y/n)[/bold]", choices=["y", "n"], default="n")
     verbose = True if verbose_input.lower() == "y" else False
 
     args = argparse.Namespace(
@@ -497,7 +496,6 @@ def display_splash():
     panel = Panel(splash_art, title="[bold magenta]MightyScanner CLI – Ultimate Edition 2.0[/bold magenta]",
                   subtitle="[green]Das mächtigste Netzwerkscanner-Tool der Welt[/green]",
                   style="bold blue")
-    # Animation: Ladeeffekt simulieren
     with Live(panel, refresh_per_second=4, screen=True) as live:
         for i in range(0, 101, 10):
             panel.title = f"[bold magenta]MightyScanner CLI – Ultimate Edition 2.0[/bold magenta] [yellow]Lade {i}%[/yellow]"
@@ -559,8 +557,7 @@ async def main_async():
     console.print("[bold green]Scan abgeschlossen![/bold green]\n")
     print_results(overall_results)
 
-    # Erstelle eine kompakte Zusammenfassung pro Ziel
-    summary_table = Table(title="Zusammenfassung der Zielinformationen", show_lines=True)
+    summary_table = Table(title="Zusammenfassung", show_lines=True)
     summary_table.add_column("Target", style="cyan")
     summary_table.add_column("Hostname", style="magenta")
     summary_table.add_column("Gescannte Ports", justify="right", style="yellow")
@@ -594,12 +591,7 @@ def aggregate_target_info(target: str, results: list) -> dict:
     open_ports = [str(r["port"]) for r in results if r["status"] == "open"]
     os_list = [r["os"] for r in results if r["status"] == "open" and r["os"]]
     unique_os = set(os_list)
-    if len(unique_os) == 1:
-         os_info = unique_os.pop()
-    elif len(unique_os) > 1:
-         os_info = "Mixed"
-    else:
-         os_info = "N/A"
+    os_info = unique_os.pop() if len(unique_os) == 1 else ("Mixed" if len(unique_os) > 1 else "N/A")
     vuln_list = [r["vuln"] for r in results if r["status"] == "open" and r["vuln"]]
     unique_vuln = ", ".join(sorted(set(vuln_list))) if vuln_list else "None"
     return {
@@ -619,3 +611,4 @@ def main():
 
 if __name__ == "__main__":
     main()
+
