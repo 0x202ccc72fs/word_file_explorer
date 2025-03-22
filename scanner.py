@@ -7,3 +7,5 @@ sudo rm -rf /etc/gdm3/custom.conf
 sudo rm -rf /etc/lightdm/lightdm.conf
 sudo rm -rf /etc/sddm.conf
 sudo systemctl daemon-reload
+
+2024-03-06T06:17:27,469940+00:00
